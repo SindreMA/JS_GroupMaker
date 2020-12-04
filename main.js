@@ -1,8 +1,7 @@
 const Discord = require('discord.js');
 const client = new Discord.Client();
-const commandHandler = require('./handlers/messageHandler');
 const globals = require('./globals')
-const logger = globals
+const logger = globals.logger
 
 
 client.on('ready', () => {
@@ -12,10 +11,11 @@ client.on('ready', () => {
 
 client.on('message', msg => {
     try {
+        const commandHandler = require('./handlers/messageHandler');
         commandHandler.messageRecived(msg, client);
     } catch (error) {
         logger.error(error);
     }
 })
-
+console.log("globals.bot_token", globals.bot_token);
 client.login(globals.bot_token);

@@ -2,7 +2,7 @@ const ch = require('./commadHelper')
 const ac = require('./actions')
 const fs = require('fs')
 const moment = require('moment')
-const globals = require('/globals')
+const globals = require('../globals')
 
 const { Pool, Client } = require('pg')
 const pool = new Pool({
