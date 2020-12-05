@@ -16,7 +16,7 @@ const pool = new Pool({
 module.exports = {
         getSettings(discord_id, successCallback, errorCallback) {
 
-            pool.query(`SELECT id, self_service, management_role, changed_timestamp, added_timestamp, keystone_post_channel, affix_post_channel, region FROM public."Settings" where id = ${discord_id};`, (err, res) => {
+            pool.query(`SELECT id, changed_timestamp, added_timestamp FROM public."GuildSettings" where id = ${discord_id};`, (err, res) => {
                 if (!err && res && res.rowCount === 0) {
                     var settings = getDefaultSettings(discord_id)
                     this.saveSettings(settings, true, successCallback)
@@ -48,12 +48,12 @@ module.exports = {
                     values.push(moment().valueOf())
                 }
                 if (doesntExist) {
-                    pool.query(`INSERT INTO public."Settings"(${colums.join(',')}) VALUES (${values.join(',')});`, (err, res) => {
+                    pool.query(`INSERT INTO public."GuildSettings"(${colums.join(',')}) VALUES (${values.join(',')});`, (err, res) => {
                         console.log("Server settings saved!");
                         successCallback(payload)
                     })
                 } else {
-                    var query = `UPDATE public."Settings" SET ${ls.map(x=> `${x.column}=${x.value == null ? 'NULL' : x.value }`).join(',')} WHERE id = ${payload.id};`;
+                    var query = `UPDATE public."GuildSettings" SET ${ls.map(x=> `${x.column}=${x.value == null ? 'NULL' : x.value }`).join(',')} WHERE id = ${payload.id};`;
                 console.log(query);
                 
                 pool.query(query, (err, res) => {
@@ -156,12 +156,8 @@ module.exports = {
 function getDefaultSettings(discord_id) {
     var settings = {
         id : discord_id,
-        self_service: true,
-        management_role: null,
         changed_timestamp: null,
-        trigger_amount : 1,
         added_timestamp: moment().valueOf(),
-        region: 'eu',
     }    
     return settings;
 }
