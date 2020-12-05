@@ -25,8 +25,10 @@ var commands = [{
     }
 }]
 
-module.exports = {
+module.exports = null
+    /*{
     name: "Wow",
     short: "wow",
     commands: commands
 }
+*/

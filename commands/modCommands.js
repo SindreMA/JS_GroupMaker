@@ -14,8 +14,10 @@ var errorEvent = (error, channel) => {
 
 var commands = []
 
-module.exports = {
-    name: "Moderation",
-    short: "mod",
-    commands: commands
-}
+module.exports = null
+    /*{
+        name: "Moderation",
+        short: "mod",
+        commands: commands
+    }
+    */
