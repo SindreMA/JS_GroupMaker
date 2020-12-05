@@ -29,9 +29,10 @@ module.exports = {
                 args = split.map(x => x.replace(/["]+/g, ''))
             }
 
-            var commands = globals.commandsItems.flatMap(x => {
+            const noneEmptyCommandItems = globals.commandsItems.filter(x => x && x.commands)
+            var commands = noneEmptyCommandItems.flatMap(x => {
                 if (typeof x.commands == "function") {
-                    return x.commands(globals.commandsItems)
+                    return x.commands(noneEmptyCommandItems)
                 } else {
                     return x.commands
                 }
