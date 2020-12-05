@@ -10,7 +10,10 @@ const config = require('C:\\tools\\groupmaker.json')
 
 client.on('ready', () => {
     logger.info(`Logged in as ${client.user.tag}!`);
-    client.user.setActivity(".help for commands")
+    client.guilds.cache.map(x => {
+        logger.info(`Connected to server ${x.name}!`);
+    })
+    client.user.setActivity("currently under development")
 });
 
 client.on('message', msg => {
