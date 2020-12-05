@@ -29,7 +29,13 @@ module.exports = {
                 args = split.map(x => x.replace(/["]+/g, ''))
             }
 
-            var commands = globals.commandsItems.flatMap(x => x.commands)
+            var commands = globals.commandsItems.flatMap(x => {
+                if (typeof x.commands == "function") {
+                    return x.commands(globals.commandsItems)
+                } else {
+                    return x.commands
+                }
+            })
             ExecuteCommands(command, args, msg, commands);
         }
     }
@@ -65,7 +71,7 @@ function ExecuteCommands(command, args, msg, commands) {
                     ac.embed(msg.channel, "You do not have permission to use this command!")
                 }
             })
-        });
+        }, err => {logger.error(`Error: ${err}`)});
     }).catch(err => {
         //Msg wasn't a command
         if (err) {
