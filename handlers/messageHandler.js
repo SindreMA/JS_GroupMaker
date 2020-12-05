@@ -5,6 +5,7 @@ const globals = require('../globals')
 var log4js = require("log4js");
 var logger = log4js.getLogger();
 logger.level = "debug";
+const config = require('C:\\tools\\groupmaker.json')
 const ac = require('../helpers/actions')
 const sql = require('../helpers/sqlHelper')
 
@@ -16,7 +17,7 @@ module.exports = {
         if (!msg.guild) return;
         client = _client;
 
-        if (msg.content.startsWith('.')) {
+        if (msg.content.startsWith(config.prefix)) {
             logger.info(`Message Reviced: ${msg.author.username}: ${msg.content}`);
             var command = msg.content.substr(1);
             var args = []
