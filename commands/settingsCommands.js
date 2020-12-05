@@ -13,36 +13,23 @@ var errorEvent = (error, channel) => {
 }
 
 var commands = [{
-        command: 'settings',
-        description: 'Shows the settings set',
-        requirePermission: ['ADMINISTRATOR'],
-        function: (args, msg, settings) => {
-            var embed = ac.embed(msg.channel, "Settings", "Here are the current settings for the bot", null, true);
+    command: 'settings',
+    description: 'Shows the settings set',
+    requirePermission: ['ADMINISTRATOR'],
+    function: (args, msg, settings) => {
+        var embed = ac.embed(msg.channel, "Settings", "Here are the current settings for the bot", null, true);
 
-            for (const key in settings) {
-                if (settings.hasOwnProperty(key)) {
-                    const element = settings[key];
-                    if (element !== null && key && key !== "id" && key != "changed_timestamp" && key !== "added_timestamp") {
-                        embed.addField(formatSettingName(key), formatSettingValue(element, msg.guild), false)
-                    }
+        for (const key in settings) {
+            if (settings.hasOwnProperty(key)) {
+                const element = settings[key];
+                if (element !== null && key && key !== "id" && key != "changed_timestamp" && key !== "added_timestamp") {
+                    embed.addField(formatSettingName(key), formatSettingValue(element, msg.guild), false)
                 }
             }
-            msg.channel.send(embed);
         }
-    },
-    {
-        command: 'self_service',
-        description: 'Toggle the abillity for users to add characters on their own',
-        requirePermission: ['ADMINISTRATOR'],
-        function: (args, msg, x) => {
-            var settings = {...x }
-            settings.self_service = !settings.self_service;
-            sql.saveSettings(settings, false, c => {
-                ac.embed(msg.channel, `Self Service have been set to ${!settings.self_service}`)
-            }, er => errorEvent(er, msg.channel))
-        }
-    },
-]
+        msg.channel.send(embed);
+    }
+}, ]
 
 module.exports = {
     name: "Settings",
