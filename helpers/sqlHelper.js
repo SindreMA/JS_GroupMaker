@@ -2,15 +2,15 @@ const ch = require('./commadHelper')
 const ac = require('./actions')
 const fs = require('fs')
 const moment = require('moment')
-const globals = require('../globals')
+const config = require('C:\\tools\\groupmaker.json')
 
 const { Pool, Client } = require('pg')
 const pool = new Pool({
-    user: globals.sql_login.user,
-    host: globals.sql_login.host,
-    database: globals.sql_login.database,
-    password: globals.sql_login.password,
-    port: globals.sql_login.port,
+    user: config.sql_user,
+    host: config.sql_host,
+    database: config.sql_database,
+    password: config.sql_password,
+    port: config.sql_port,
 })
 
 module.exports = {
