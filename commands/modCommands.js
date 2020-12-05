@@ -4,8 +4,9 @@ const ac = require('../helpers/actions')
 const wowHelper = require('../helpers/wowHelper')
 const sql = require('../helpers/sqlHelper')
 const fs = require('fs')
-const logger = require('../globals').logger
-
+var log4js = require("log4js");
+var logger = log4js.getLogger();
+logger.level = "debug";
 
 var errorEvent = (error, channel) => {
     ac.embed(channel, `Something went wrong: ${error}`)
