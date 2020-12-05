@@ -2,7 +2,9 @@ const fs = require('fs')
 const actions = require('../helpers/actions')
 const ch = require('../helpers/commadHelper')
 const globals = require('../globals')
-const logger = globals.logger
+var log4js = require("log4js");
+var logger = log4js.getLogger();
+logger.level = "debug";
 const ac = require('../helpers/actions')
 const sql = require('../helpers/sqlHelper')
 
@@ -26,7 +28,7 @@ module.exports = {
                 args = split.map(x => x.replace(/["]+/g, ''))
             }
 
-            var commands = globals.commandsItems.flatMap(x=> x.commands)
+            var commands = globals.commandsItems.flatMap(x => x.commands)
             ExecuteCommands(command, args, msg, commands);
         }
     }
@@ -34,25 +36,25 @@ module.exports = {
 
 function ExecuteCommands(command, args, msg, commands) {
     logger.debug('Checking if message is command!')
-    CommandCheck(command,commands).then(commandItem => {
-        logger.debug('Command exist!')
-        logger.debug('Getting server settings')
-        sql.getSettings(msg.guild.id, settings => {
-            logger.debug('Got settings')
-            PermissionCheck(commandItem.requirePermission, settings, msg.member, settings.self_service && commandItem.selfserviceSupport).then(() => {
-                ArgumentCheck(args, commandItem.requireArgs).then(() => {
-                    //Executing function...
-                    try {
-                        commandItem.function(args,msg,settings,client)    
-                    } catch (error) {
-                        logger.error(error)                        
-                        ac.embed(msg.channel, `${error}`)
-                    }
-                }).catch(err => {
-                    if (err) {
-                        logger.error(err)                        
-                    } else {
-                        ac.embed(msg.channel, `Missing expected arguments. ${commandItem.args && commandItem.args.length !== 0 ? `Make sure to pass ${commandItem.args.join(', ')} in that order!`: ''}`)
+    CommandCheck(command, commands).then(commandItem => {
+                logger.debug('Command exist!')
+                logger.debug('Getting server settings')
+                sql.getSettings(msg.guild.id, settings => {
+                            logger.debug('Got settings')
+                            PermissionCheck(commandItem.requirePermission, settings, msg.member, settings.self_service && commandItem.selfserviceSupport).then(() => {
+                                        ArgumentCheck(args, commandItem.requireArgs).then(() => {
+                                                //Executing function...
+                                                try {
+                                                    commandItem.function(args, msg, settings, client)
+                                                } catch (error) {
+                                                    logger.error(error)
+                                                    ac.embed(msg.channel, `${error}`)
+                                                }
+                                            }).catch(err => {
+                                                    if (err) {
+                                                        logger.error(err)
+                                                    } else {
+                                                        ac.embed(msg.channel, `Missing expected arguments. ${commandItem.args && commandItem.args.length !== 0 ? `Make sure to pass ${commandItem.args.join(', ')} in that order!`: ''}`)
                     }
                 })
             }).catch(err => {

@@ -1,6 +1,8 @@
 const ch = require('../helpers/commadHelper')
 const ac = require('../helpers/actions')
-const logger = require('../globals').logger
+var log4js = require("log4js");
+var logger = log4js.getLogger();
+logger.level = "debug";
 const sql = require('../helpers/sqlHelper')
 const genhelper = require('../helpers/generalHelper')
 const wowHelper = require('../helpers/wowHelper')
@@ -9,8 +11,7 @@ var errorEvent = (error, channel) => {
     ac.embed(channel, `Something went wrong: ${error}`)
 }
 
-var commands = [
-    {
+var commands = [{
         command: 'add',
         args: ['name', 'realm', 'region'],
         requiredArgs: [2, 3],
@@ -29,7 +30,7 @@ var commands = [
                             sql.addPlayer(msg.guild.id, { name, realm, region, added_by: msg.author.id, }, c => {
                                 var embed = ac.embed(msg.channel, `${x.data.name} have been added!`, null, null, true)
                                 embed.setThumbnail(x.data.avatar_url)
-                                //embed.addField("Achievement Points", x.data.achievement_points, true)
+                                    //embed.addField("Achievement Points", x.data.achievement_points, true)
                                 embed.addField("Faction", x.data.faction, true)
                                 embed.addField("Item Level", x.data.equipped_item_level, true)
                                 embed.addField("Level", x.data.level, true)

@@ -1,10 +1,9 @@
 var ac = require('./actions')
 const axios = require('axios')
+var log4js = require("log4js");
+var logger = log4js.getLogger();
+logger.level = "debug";
 
-var logger = null;
-setTimeout(() => {
-    logger = require('../globals').logger;
-}, 50);
 module.exports = {
         GetPlayerDetails(name, realm, region, checkblizzard) {
             var url = `https://api2.bestkeystone.com/api/Player/new_details?character=${name}&realm=${realm}&region=${region}${checkblizzard ? `&checkblizzard=${checkblizzard}` :""}`;
