@@ -13,8 +13,12 @@ module.exports = {
                     sql.getMessageTemplates().then(templates => {
                         const template = templates.filter(c => c.id === messageTemplate).length !== 0 ? templates.filter(c => c.id === messageTemplate)[0] : null
                         if (template) {
-                            var embed = ac.embed(channel, user.DMChannel.send(template.messages[0]), ``, null, true);
-                            channel.send(embed)
+                            sql.getMessages(template.id).then(messages => {
+                                var embed = ac.embed(channel, user.DMChannel.send(messages[0]), ``, null, true);
+                                channel.send(embed)
+                            }).catch(x => {
+                                reject(x)
+                            })
                         } else {
                             reject("The message template you are trying to use does not exist!")
                         }

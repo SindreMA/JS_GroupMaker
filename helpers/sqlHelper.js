@@ -113,6 +113,50 @@ module.exports = {
             }            
         })        
     },
+    getMessageTemplates() {
+        return new Promise((resolve, reject) => {
+            pool.query(`SELECT id, created, name FROM public."MessageTemplates";`, (err,res) => {
+                if (!err && res && res.rowCount === 0) {
+                    resolve([])
+                } else if (res && res.rows && res.rowCount !== 0) {
+                    resolve(res)
+                } else if (err) {
+                    reject(err)
+                }
+            })
+        })        
+    },
+    getMessages(template_id) {
+        return new Promise((resolve, reject) => {
+            pool.query(`SELECT template_id, messsage, id FROM public."Messages" where template_id = ${template_id};`, (err,res) => {
+                if (!err && res && res.rowCount === 0) {
+                    resolve([])
+                } else if (res && res.rows && res.rowCount !== 0) {
+                    this.getOptions(res.map(x=> x.id)).then(allOptions=> {
+                        const resultWithOptions = res.map(x=> {return {...x, options: allOptions.filter(c=> c.message_id == x.id)}})
+                        resolve(resultWithOptions)
+                    }).catch(x=> {
+                        reject(x)
+                    })                    
+                } else if (err) {
+                    reject(err)
+                }
+            })
+        })        
+    },
+    getOptions(message_ids) {
+        return new Promise((resolve, reject) => {
+            pool.query(`SELECT message_id, option, preferred_reaction, id FROM public."Options" where message_id = ${message_id};`, (err,res) => {
+                if (!err && res && res.rowCount === 0) {
+                    resolve([])
+                } else if (res && res.rows && res.rowCount !== 0) {
+                    resolve(res)
+                } else if (err) {
+                    reject(err)
+                }
+            })
+        })        
+    },
 }
 
 function getDefaultSettings(discord_id) {
