@@ -65,92 +65,54 @@ module.exports = {
              
         }
     },
-    getPlayer(discord_id, payload, successCallback, errorCallback) {
-        if (discord_id && payload && payload.name && payload.realm && payload.region) {
-            pool.query(`SELECT discord_id, name, realm, region, added_by, added_timestamp FROM public."Players" where discord_id = ${discord_id} and name = '${payload.name.toLowerCase()}' and region = '${payload.region.toLowerCase()} and realm = ''${payload.realm.toLowerCase()}'' limit 1`, (err, res) => {
-                if (res && res.rows) {
-                    successCallback(res.rows[0])
-                } else {
-                    errorCallback(err)
-                }
-              })
-        }
-    },
-    getPlayers(discord_id, user_id, successCallback, errorCallback) {
-        if (discord_id ) {
-            var LimitForUser = "";
-            if (user_id != null) {
-                LimitForUser = `and added_by = ${user_id}`
-            }
-            pool.query(`SELECT discord_id, name, realm, region, added_by, added_timestamp FROM public."Players" where discord_id = ${discord_id} ${LimitForUser}`, (err, res) => {
-                if (res && res.rows) {
-                    successCallback(res.rows)
-                } else {
-                    errorCallback(err)
-                }
-              })
-        }
-    },
+   
     cleanText(str) {
         var res = str.replace(/[']+/g, '')
         return res
     },
-    getGuilds(discord_id, successCallback, errorCallback) {
-        if (discord_id ) {           
-            pool.query(`SELECT discord_id, region, guild_id, faction, added_by, added_timestamp, name, realm FROM public."Guilds" where discord_id = ${discord_id}`, (err, res) => {
-                if (res && res.rows) {
-                    successCallback(res.rows)
-                } else {
-                    errorCallback(err)
+    getChannelMessagesProgress(user_id) {
+        return new Promise((resolve, reject) => {
+            pool.query(`SELECT id, message_id, option_value, modified, text_value, "user", channel FROM public."ChannelMessageProgress" where "user" = ${user_id};`, (err,res) => {
+                if (!err && res && res.rowCount === 0) {
+                    resolve([])
+                } else if (res && res.rows && res.rowCount !== 0) {
+                    resolve(res)
+                } else if (err) {
+                    reject(err)
                 }
-              })
-        }
+            })
+        })        
     },
-
-    addPlayer(discord_id, payload, successCallback, errorCallback) {
-        if (discord_id && payload && payload.name && payload.realm && payload.region && payload.added_by) {
-                pool.query(`INSERT INTO public."Players"(discord_id, name, realm, region, added_by, added_timestamp) VALUES (${discord_id}, '${f(payload.name)}', '${f(payload.realm)}', '${f(payload.region)}', ${payload.added_by}, ${moment().valueOf()});`, (err, res) => {
-                    if (res && res.rows) {
-                        successCallback(res)
+    deleteChannelMessagesProgress(ids) {
+        return new Promise((resolve, reject) => {
+            if (ids && ids.length !== 0) {
+                pool.query(`delete FROM public."ChannelMessageProgress" where ${ids.map(x=> ` id != ${x}` ).join(' AND ')} = ${user_id};`, (err,res) => {
+                    if (!err) {
+                        resolve()
                     } else {
-                        errorCallback(err)
+                        reject(err)
                     }
-                  })
-                } else errorCallback("Can't add player to SQL cause payload were missing data")
+                })   
+            } else {
+                resolve([])
+            }            
+        })        
     },
-    removePlayer(discord_id, payload, successCallback, errorCallback) {
-        if (discord_id && payload && payload.name && payload.realm && payload.region && (payload.user || payload.admin)) {
-            pool.query(`DELETE FROM public."Players" WHERE name = '${f(payload.name)}' and realm = '${f(payload.realm)}' and region = '${f(payload.region)}' ${payload.user ? ` and added_by = ${payload.user}`: ''};`, (err, res) => {
-                if (res && res.rows) {
-                    successCallback(res)
-                } else {
-                    errorCallback(err)
-                }
-              })
-            } else errorCallback("Can't remove player from SQL cause payload were missing data")
+    updateChannelMessagesProgress(id, payload) {
+        return new Promise((resolve, reject) => {
+            if (id && payload) {
+                pool.query(`UPDATE public."ChannelMessageProgress" SET id=${payload.id}, message_id=${payload.message_id}, option_value=${payload.option_value}, modified=${payload.modified}, text_value=${payload.text_value}, "user"=${payload.user}, channel=${payload.channel} WHERE id = ${id};`, (err,res) => {
+                    if (!err) {
+                        resolve()                    
+                    } else {
+                        reject(err)
+                    }
+                })
+            } else {
+                reject("id or payload wrong")
+            }            
+        })        
     },
-    addGuild(discord_id, payload, successCallback, errorCallback) {
-        if (discord_id && payload && payload.name && payload.realm && payload.region && payload.added_by && payload.region && payload.name && payload.faction && payload.id) {
-            pool.query(`INSERT INTO public."Guilds"(discord_id, region, guild_id, faction, added_by, added_timestamp, name, realm) VALUES (${discord_id}, '${payload.region}', ${payload.id}, '${payload.faction}', ${payload.added_by}, ${moment().valueOf()}, '${payload.name}', '${payload.realm}');`, (err, res) => {
-                if (res && res.rows) {
-                    successCallback(res)
-                } else {
-                    errorCallback(err)
-                }
-              })
-    } else errorCallback("Can't add guild to SQL cause payload were missing data")
-    },
-    removeGuild(discord_id, payload, successCallback, errorCallback) {
-        if (discord_id && payload && payload.name && payload.realm && payload.region && (payload.user || payload.admin)) {
-            pool.query(`DELETE FROM public."Guilds" WHERE name = '${f(payload.name)}' and realm = '${f(payload.realm)}' and region = '${f(payload.region)}' ${payload.user ? ` and added_by = ${payload.user}`: ''};`, (err, res) => {
-                if (res && res.rows) {
-                    successCallback(res)
-                } else {
-                    errorCallback(err)
-                }
-              })
-        } else errorCallback("Can't remove guild from SQL cause payload were missing data")
-    }
 }
 
 function getDefaultSettings(discord_id) {
