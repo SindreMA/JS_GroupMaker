@@ -8,6 +8,8 @@ var log4js = require("log4js");
 var logger = log4js.getLogger();
 logger.level = "debug";
 
+const groupHandler = require('../handlers/groupMakerHandler')
+
 var errorEvent = (error, channel) => {
     ac.embed(channel, `Something went wrong: ${error}`)
 }
@@ -21,6 +23,7 @@ var commands = [{
         msg.channel.send(embed).then(message => {
             message.delete({ timeout: 2000 })
             logger.debug(`Deleting group creation msg after 2 sec`)
+            groupHandler.createNewGroup(msg.author, msg.channel, 1)
         });
 
     }

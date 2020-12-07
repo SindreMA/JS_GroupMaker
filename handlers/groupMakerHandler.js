@@ -1,3 +1,4 @@
+var log4js = require("log4js");
 var logger = log4js.getLogger();
 logger.level = "debug";
 const sql = require('../helpers/sqlHelper')
@@ -7,7 +8,7 @@ const ac = require('../helpers/actions')
 module.exports = {
     createNewGroup(user, channel, messageTemplate = 1) {
         return new Promise((resolve, reject) => {
-            this.deleteOldGroupsCreations(user).then(() => {
+            this.deleteOldGroupsCreations(user, channel).then(() => {
                 //old creation have been deleted if it existed
                 sql.insertChannelMessagesProgress(user, channel, messageTemplate).then(() => {
                     sql.getMessageTemplates().then(templates => {
@@ -23,19 +24,23 @@ module.exports = {
                             reject("The message template you are trying to use does not exist!")
                         }
                     }).catch(x => {
+                        logger.error(x)
                         reject(x)
                     })
                 }).catch(x => {
+                    logger.error(x)
                     reject(x)
                 })
             }).catch(x => {
-                channel.send("Couldn't remove old group creation progress for user.")
+                logger.error("Couldn't remove old group creation progress for user.")
+                logger.error(x)
+                reject(x)
             })
         })
     },
-    deleteOldGroupsCreations(guild, user, channel) {
+    deleteOldGroupsCreations(user, channel) {
         return new Promise((resolve, reject) => {
-            sql.getChannelMessagesProgress(user.author.id).then(progresses => {
+            sql.getChannelMessagesProgress(user.id).then(progresses => {
                 if (progresses.length !== 0) {
                     const ids = progresses.map(x => x.id);
                     sql.deleteChannelMessagesProgress(ids).then(x => {
