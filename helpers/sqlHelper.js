@@ -70,23 +70,27 @@ module.exports = {
         var res = str.replace(/[']+/g, '')
         return res
     },
-    getChannelMessagesProgress(user_id) {
+    getMessageSetup(user_id) {
         return new Promise((resolve, reject) => {
-            pool.query(`SELECT id, message_id, option_value, modified, text_value, "user", channel FROM public."ChannelMessageProgress" where "user" = ${user_id};`, (err,res) => {
+            const query = `SELECT id, "user", channel, created, completed, template FROM public."ActiveMessageSetups" where "user"=${user_id};`;
+            console.log("query", query);
+            pool.query(query, (err,res) => {
                 if (!err && res && res.rowCount === 0) {
                     resolve([])
                 } else if (res && res.rows && res.rowCount !== 0) {
-                    resolve(res)
+                    resolve(res.rows)
                 } else if (err) {
                     reject(err)
                 }
             })
         })        
     },
-    deleteChannelMessagesProgress(ids) {
+    deleteMessageSetup(ids) {
         return new Promise((resolve, reject) => {
             if (ids && ids.length !== 0) {
-                pool.query(`delete FROM public."ChannelMessageProgress" where ${ids.map(x=> ` id != ${x}` ).join(' AND ')} = ${user_id};`, (err,res) => {
+                const query = `delete FROM public."ActiveMessageSetups" where completed = false ${ids.length !== 0 ? 'AND' : ''} ${ids.map(x=> ` id != ${x}` ).join(' AND ')} = ${user_id};`;
+                console.log("query",query);
+                pool.query(query, (err,res) => {
                     if (!err) {
                         resolve()
                     } else {
@@ -98,10 +102,25 @@ module.exports = {
             }            
         })        
     },
-    updateChannelMessagesProgress(id, payload) {
+    finishMessageSetup(id) {
         return new Promise((resolve, reject) => {
-            if (id && payload) {
-                pool.query(`UPDATE public."ChannelMessageProgress" SET id=${payload.id}, message_id=${payload.message_id}, option_value=${payload.option_value}, modified=${payload.modified}, text_value=${payload.text_value}, "user"=${payload.user}, channel=${payload.channel} WHERE id = ${id};`, (err,res) => {
+            if (id) {
+                pool.query(`UPDATE public."ActiveMessageSetups" SET completed=TRUE WHERE id = ${id};`, (err,res) => {
+                    if (!err) {
+                        resolve()                    
+                    } else {
+                        reject(err)
+                    }
+                })
+            } else {
+                reject("id or payload wrong")
+            }            
+        })        
+    },
+    insertMessageSetup(payload) {
+        return new Promise((resolve, reject) => {
+            if (payload) {
+                pool.query(`INSERT INTO public."ActiveMessageSetups"("user", channel, created, template) VALUES (${payload.user}, ${payload.channel}, ${payload.created}, ${payload.template});`, (err,res) => {
                     if (!err) {
                         resolve()                    
                     } else {
@@ -119,7 +138,7 @@ module.exports = {
                 if (!err && res && res.rowCount === 0) {
                     resolve([])
                 } else if (res && res.rows && res.rowCount !== 0) {
-                    resolve(res)
+                    resolve(res.rows)
                 } else if (err) {
                     reject(err)
                 }
@@ -128,12 +147,12 @@ module.exports = {
     },
     getMessages(template_id) {
         return new Promise((resolve, reject) => {
-            pool.query(`SELECT template_id, messsage, id FROM public."Messages" where template_id = ${template_id};`, (err,res) => {
+            pool.query(`SELECT message, "order", template_id, title, id FROM public."Messages" where template_id = ${template_id};`, (err,res) => {
                 if (!err && res && res.rowCount === 0) {
                     resolve([])
                 } else if (res && res.rows && res.rowCount !== 0) {
-                    this.getOptions(res.map(x=> x.id)).then(allOptions=> {
-                        const resultWithOptions = res.map(x=> {return {...x, options: allOptions.filter(c=> c.message_id == x.id)}})
+                    this.getOptions(res.rows.map(x=> x.id)).then(allOptions=> {
+                        const resultWithOptions = res.rows.map(x=> {return {...x, options: allOptions.filter(c=> c.message_id == x.id)}})
                         resolve(resultWithOptions)
                     }).catch(x=> {
                         reject(x)
@@ -146,11 +165,11 @@ module.exports = {
     },
     getOptions(message_ids) {
         return new Promise((resolve, reject) => {
-            pool.query(`SELECT message_id, option, preferred_reaction, id FROM public."Options" where message_id = ${message_id};`, (err,res) => {
+            pool.query(`SELECT message_id, option, preferred_reaction, "order", id FROM public."Options" where ${message_ids.map(x=> ` message_id = ${x}` ).join(' AND ')}`, (err,res) => {
                 if (!err && res && res.rowCount === 0) {
                     resolve([])
                 } else if (res && res.rows && res.rowCount !== 0) {
-                    resolve(res)
+                    resolve(res.rows)
                 } else if (err) {
                     reject(err)
                 }

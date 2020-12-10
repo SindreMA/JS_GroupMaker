@@ -2,7 +2,8 @@ var log4js = require("log4js");
 var logger = log4js.getLogger();
 logger.level = "debug";
 const sql = require('../helpers/sqlHelper')
-const ac = require('../helpers/actions')
+const ac = require('../helpers/actions');
+const { DMChannel } = require("discord.js");
 
 
 module.exports = {
@@ -10,13 +11,31 @@ module.exports = {
         return new Promise((resolve, reject) => {
             this.deleteOldGroupsCreations(user, channel).then(() => {
                 //old creation have been deleted if it existed
-                sql.insertChannelMessagesProgress(user, channel, messageTemplate).then(() => {
+
+                const payload = {
+                    user: user.id,
+                    channel: channel.id,
+                    created: ac.getUnixTimestamp(),
+                    template: messageTemplate
+                }
+                sql.insertMessageSetup(payload).then(() => {
+                    console.log("1");
                     sql.getMessageTemplates().then(templates => {
+                        console.log("templates", templates);
                         const template = templates.filter(c => c.id === messageTemplate).length !== 0 ? templates.filter(c => c.id === messageTemplate)[0] : null
                         if (template) {
                             sql.getMessages(template.id).then(messages => {
-                                var embed = ac.embed(channel, user.DMChannel.send(messages[0]), ``, null, true);
-                                channel.send(embed)
+                                console.log("user", user);
+                                user.createDM().then(DMChannel => {
+                                    if (true) {
+                                        var embed = ac.embed(DMChannel, 'Starting group creation...', ``, null, true);
+                                        DMChannel.send(embed)
+                                    }
+                                    if (true) {
+                                        var embed = ac.embed(DMChannel, messages[0].title, ``, null, true);
+                                        DMChannel.send(embed)
+                                    }
+                                })
                             }).catch(x => {
                                 reject(x)
                             })
@@ -40,10 +59,12 @@ module.exports = {
     },
     deleteOldGroupsCreations(user, channel) {
         return new Promise((resolve, reject) => {
-            sql.getChannelMessagesProgress(user.id).then(progresses => {
-                if (progresses.length !== 0) {
-                    const ids = progresses.map(x => x.id);
-                    sql.deleteChannelMessagesProgress(ids).then(x => {
+            sql.getMessageSetup(user.id).then(setups => {
+                console.log("setups", setups);
+                const filtered = setups.filter(x => x.completed)
+                if (filtered.length !== 0) {
+                    const ids = filtered.map(x => x.id);
+                    sql.deleteMessageSetup(ids).then(x => {
                         resolve()
                     }).catch(x => {
                         reject(x)

@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const axios = require('axios')
 const { MessageEmbed, EmbedField } = require('discord.js');
+const moment = require('moment')
 
 
 module.exports = {
@@ -81,6 +82,9 @@ module.exports = {
     },
     capitalizeFirstLetter(string) {
         return string.charAt(0).toUpperCase() + string.slice(1);
+    },
+    getUnixTimestamp() {
+        return moment().valueOf();
     }
 
 

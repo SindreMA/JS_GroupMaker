@@ -21,7 +21,7 @@ var commands = [{
         logger.info(`Starting new group progress for user ${msg.author.tag}`)
         var embed = ac.embed(msg.channel, "Creating new group...", `Continue the setup in direct messages ${msg.author}!`, null, true);
         msg.channel.send(embed).then(message => {
-            message.delete({ timeout: 2000 })
+            message.delete({ timeout: 5000 })
             logger.debug(`Deleting group creation msg after 2 sec`)
             groupHandler.createNewGroup(msg.author, msg.channel, 1)
         });
