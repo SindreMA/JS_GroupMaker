@@ -28,7 +28,7 @@ module.exports = {
                                 console.log("user", user);
                                 user.createDM().then(DMChannel => {
                                     if (true) {
-                                        var embed = ac.embed(DMChannel, 'Starting group creation...', ``, null, true);
+                                        var embed = ac.embed(DMChannel, `Starting group creation for: ${template.name}`, ``, null, true);
                                         DMChannel.send(embed)
                                     }
                                     if (true) {
