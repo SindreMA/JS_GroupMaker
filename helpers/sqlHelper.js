@@ -176,6 +176,32 @@ module.exports = {
             })
         })        
     },
+    getMessageProgress(setupId) {
+        return new Promise((resolve, reject) => {
+            pool.query(`SELECT id, value, added, completed, message_setup_id, message_id FROM public."MessageProgress" where message_setup_id = ${setupId}`, (err,res) => {
+                if (!err && res && res.rowCount === 0) {
+                    resolve([])
+                } else if (res && res.rows && res.rowCount !== 0) {
+                    resolve(res.rows)
+                } else if (err) {
+                    reject(err)
+                }
+            })
+        })   
+    },
+    insertMessageProgress(payload) {
+        return new Promise((resolve, reject) => {
+            pool.query(`INSERT INTO public."MessageProgress"(value, added, completed, message_setup_id, message_id) VALUES ('${payload.value}', ${ac.getUnixTimestamp()}, ${payload.completed ? 'TRUE' : 'FALSE'}, ${payload.setupId}, ${payload.messageId});`, (err,res) => {
+                if (!err && res && res.rowCount === 0) {
+                    resolve([])
+                } else if (res && res.rows && res.rowCount !== 0) {
+                    resolve(res.rows)
+                } else if (err) {
+                    reject(err)
+                }
+            })
+        })   
+    }
 }
 
 function getDefaultSettings(discord_id) {

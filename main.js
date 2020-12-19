@@ -4,6 +4,7 @@ const client = new Discord.Client();
 var log4js = require("log4js");
 var logger = log4js.getLogger();
 logger.level = "debug";
+const gh = require('./handlers/groupMakerHandler')
 
 const config = require('C:\\tools\\groupmaker.json')
 
@@ -15,6 +16,10 @@ client.on('ready', () => {
     })
     client.user.setActivity("currently under development")
 });
+
+client.on('messageReactionAdd', (reaction, user) => {
+    gh.handleAction("reaction", reaction, user)
+})
 
 client.on('message', msg => {
     try {

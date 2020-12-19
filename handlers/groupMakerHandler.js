@@ -19,7 +19,7 @@ module.exports = {
                     template: messageTemplate
                 }
                 sql.insertMessageSetup(payload).then(() => {
-                    this.sendSetupMessage(user);
+                    this.sendSetupMessage(user, channel);
                 }).catch(x => {
                     logger.error(x)
                     reject(x)
@@ -49,56 +49,92 @@ module.exports = {
             }).catch(x => reject(x))
         })
     },
-    sendSetupMessage(user, channel) {
-        sql.getMessageSetup(user.id).then(setups => {
-            const filteredSetups = setups.filter(x => x.completed && user.id === x.user && channel.id === x.channel)
-            if (filteredSetups.length !== 0) {
-                const setup = filteredSetups[0]
-                return sql.getMessageTemplates().then(templates => {
-                    console.log("templates", templates);
-                    const template = templates.filter(c => c.id === messageTemplate).length !== 0 ? templates.filter(c => c.id === setup.template)[0] : null
-                    if (template) {
-                        sql.getMessages(template.id).then(messages => {
+    sendSetupMessage(user, channel, msg) {
+        return new Promise((resolve, reject) => {
 
-                            sql.getMessageProgress(setup.id).then(progresses => {
+            logger.info("Sending setup message")
+            sql.getMessageSetup(user.id).then(setups => {
+                logger.info("getting message setups")
+                console.log("setups", setups);
+                console.log("channel.id", channel.id);
+                console.log(" user.id", user.id);
+                const filteredSetups = setups.filter(x => parseInt(user.id) === parseInt(x.user) && parseInt(channel.id) === parseInt(x.channel))
+                logger.info("getting spesific setup")
+                logger.info("filteredSetups", filteredSetups)
 
-                                const filteredProgresses = progresses.filter(x => x.completed).sort((a, b) => a.message_id - b.message_id).sort((a, b) => a.id - b.id)
-                                let messageProgress = 0
-                                if (filteredProgresses.length !== 0) {
-                                    messageProgress = filteredProgresses[filteredProgresses.length - 1]
-                                }
+                if (filteredSetups.length !== 0) {
+                    const setup = filteredSetups[0]
+                    logger.info("getting message templates")
+                    return sql.getMessageTemplates().then(templates => {
+                        console.log("templates", templates);
+                        const template = templates.filter(c => c.id === setup.template).length !== 0 ? templates.filter(c => c.id === setup.template)[0] : null
+                        if (template) {
+                            logger.info("Getting messsages for template")
+                            sql.getMessages(template.id).then(messages => {
+                                logger.info("Getting progress for setup")
+                                sql.getMessageProgress(setup.id).then(progresses => {
 
-
-
-                                const newMsg = messages[messageProgress]
-
-
-                                console.log("user", user);
-                                user.createDM().then(DMChannel => {
-                                    if (true) {
-                                        var embed = ac.embed(DMChannel, `Starting group creation for: ${template.name}`, ``, null, true);
-                                        DMChannel.send(embed)
+                                    const filteredProgresses = progresses.filter(x => x.completed).sort((a, b) => a.message_id - b.message_id).sort((a, b) => a.id - b.id)
+                                    let message = null
+                                    if (filteredProgresses.length !== 0) {
+                                        const messageProgress = filteredProgresses[filteredProgresses.length - 1]
+                                        message
+                                    } else {
+                                        message = messages[0]
                                     }
-                                    if (true) {
-                                        var embed = ac.embed(DMChannel, messages[0].title, ``, null, true);
-                                        DMChannel.send(embed)
+
+
+                                    if (msg) {
+                                        //save progress
+                                        console.log("contine progress");
+                                        /*
+                                        let payload = {
+                                            value: ,
+                                            completed: ,
+                                            setupId: ,
+                                            messageId: ,
+                                        }
+                                        sql.insertMessageProgress()
+                                        */
+
+                                    } else {
+                                        user.createDM().then(DMChannel => {
+                                            if (true) {
+                                                var embed = ac.embed(DMChannel, `Starting group creation for: ${template.name}`, ``, null, true);
+                                                DMChannel.send(embed)
+                                            }
+                                            if (true) {
+                                                var embed = ac.embed(DMChannel, message.title && message.title, message.description && message.description, null, true);
+                                                DMChannel.send(embed)
+                                            }
+                                        })
+
                                     }
-                                })
+                                }).catch(X => logger.error(x))
 
-                            }).catch(X => logger.error(x))
+                            }).catch(x => {
+                                reject(x)
+                            })
+                        } else {
+                            reject("The message template you are trying to use does not exist!")
+                        }
+                    }).catch(x => {
+                        logger.error(x)
+                        reject(x)
+                    })
+                }
+            }).catch(x => logger.error(x))
+        })
+    },
+    handleAction = (type, action, _user) => {
+        if (type === 'message') {
+            const message = action
+            const user = message.author
 
-                        }).catch(x => {
-                            reject(x)
-                        })
-                    } else {
-                        reject("The message template you are trying to use does not exist!")
-                    }
-                }).catch(x => {
-                    logger.error(x)
-                    reject(x)
-                })
-            }
-        }).catch(x => logger.error(x))
+        } else if (type === 'reaction') {
+            const reaction = action
+            const user = _user
+        }
     }
 
 }

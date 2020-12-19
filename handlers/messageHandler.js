@@ -8,13 +8,17 @@ logger.level = "debug";
 const config = require('C:\\tools\\groupmaker.json')
 const ac = require('../helpers/actions')
 const sql = require('../helpers/sqlHelper')
+const gh = require('../handlers/groupMakerHandler')
 
 var client = null
 
 
 module.exports = {
     messageRecived(msg, _client) {
-        if (!msg.guild) return;
+        if (!msg.guild) {
+            UserMessageHandler(msg)
+            return
+        };
         client = _client;
 
         if (msg.content.startsWith(config.prefix)) {
@@ -40,6 +44,11 @@ module.exports = {
             ExecuteCommands(command, args, msg, commands);
         }
     }
+}
+
+
+UserMessageHandler = (msg) => {
+    gh.handleAction("message", msg)
 }
 
 function ExecuteCommands(command, args, msg, commands) {
