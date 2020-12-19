@@ -48,7 +48,9 @@ module.exports = {
 
 
 UserMessageHandler = (msg) => {
-    gh.handleAction("message", msg)
+    if (!msg.author.bot && msg.author.id !== client.user.id) {
+        gh.handleAction("message", msg)
+    }
 }
 
 function ExecuteCommands(command, args, msg, commands) {

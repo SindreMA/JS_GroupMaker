@@ -18,6 +18,7 @@ client.on('ready', () => {
 });
 
 client.on('messageReactionAdd', (reaction, user) => {
+    logger.info("Reaction added")
     gh.handleAction("reaction", reaction, user)
 })
 
