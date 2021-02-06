@@ -34,7 +34,7 @@ module.exports = {
         deleteMessageSetup(user, channel) {
             return new Promise((resolve, reject) => {
                 sql.getMessageSetup(user.id).then(setups => {
-                    console.log("setups", setups);
+                    //console.log("setups", setups);
                     const filtered = setups.filter(x => x.completed)
                     if (filtered.length !== 0) {
                         const ids = filtered.map(x => x.id);
@@ -52,33 +52,33 @@ module.exports = {
         sendSetupMessage(user, channel, payload) {
             return new Promise((resolve, reject) => {
 
-                logger.info("Sending setup message")
+                //logger.info("Sending setup message")
                 sql.getMessageSetup(user.id).then(setups => {
-                    logger.info("getting message setups")
-                    console.log("setups", setups);
-                    console.log("channel.id", channel.id);
-                    console.log(" user.id", user.id);
+                    //logger.info("getting message setups")
+                    //console.log("setups", setups);
+                    //console.log("channel.id", channel.id);
+                    //console.log(" user.id", user.id);
                     const filteredSetups = setups.filter(x => parseInt(user.id) === parseInt(x.user) && (parseInt(channel.id) === parseInt(x.channel) || payload))
-                    logger.info("getting spesific setup")
-                    logger.info("filteredSetups", filteredSetups)
+                        //logger.info("getting spesific setup")
+                        //logger.info("filteredSetups", filteredSetups)
 
                     if (filteredSetups.length !== 0) {
                         const setup = filteredSetups[0]
-                        logger.info("getting message templates")
+                            //logger.info("getting message templates")
                         return sql.getMessageTemplates().then(templates => {
-                            console.log("templates", templates);
+                            //console.log("templates", templates);
                             const template = templates.filter(c => c.id === setup.template).length !== 0 ? templates.filter(c => c.id === setup.template)[0] : null
                             if (template) {
-                                logger.info("Getting messsages for template")
+                                //logger.info("Getting messsages for template")
                                 sql.getMessages(template.id).then(messages => {
-                                    logger.info("Getting progress for setup")
+                                    //logger.info("Getting progress for setup")
                                     sql.getMessageProgress(setup.id).then(progresses => {
 
                                         const filteredProgresses = progresses.filter(x => x.completed).sort((a, b) => a.message_id - b.message_id).sort((a, b) => a.id - b.id)
                                         let message = null
                                         if (filteredProgresses.length !== 0) {
                                             const messageProgress = filteredProgresses[filteredProgresses.length - 1]
-                                            message
+                                            message = messages[messageProgress.message_id + 1]
                                         } else {
                                             message = messages[0]
                                         }
@@ -86,16 +86,40 @@ module.exports = {
 
                                         if (payload) {
                                             //save progress
-                                            console.log("contine progress");
+                                            var modpayload = {...payload }
+                                            modpayload.setupId = setup.id
+                                            modpayload.messageId = message.id
+                                            let backupReactions = [`1️⃣`, `2️⃣`, `3️⃣`, `4️⃣`, `5️⃣`, `6️⃣`, `7️⃣`, `8️⃣`, `9️⃣`, `🔟`, `0️⃣`]
+                                            for (let i = 0; i < backupReactions.length; i++) {
+                                                const option = backupReactions[i];
+                                                if (option === modpayload.value) {
+                                                    modpayload.value = message.options[i].option
+                                                }
+                                            }
+                                            console.log("contine progress", modpayload);
+                                            sql.insertMessageProgress(modpayload)
+
+                                            user.createDM().then(DMChannel => {
+                                                var newMsg = messages[message.order + 1]
+                                                if (newMsg) {
+                                                    this.sendMessage(newMsg, DMChannel)
+                                                } else {
+                                                    console.log("Thing is done");
+                                                    //this.PostCompeteMessage(setup)
+                                                }
+
+                                            })
+
+
                                             /*
-                                            payload.setupId: ,
-                                            payload.messageId: ,
-                                            sql.insertMessageProgress()
-                                            */
+                                                payload.setupId: ,
+                                                payload.messageId: ,
+                                            
+                                                */
 
                                         } else {
                                             user.createDM().then(DMChannel => {
-                                                if (true) {
+                                                if (false) {
                                                     var embed = ac.embed(DMChannel, `Starting group creation for: ${template.name}`, ``, null, true);
                                                     DMChannel.send(embed)
                                                 }
@@ -120,12 +144,13 @@ module.exports = {
             })
         },
         sendMessage(message, channel) {
+            console.log("message", message);
             var embed = ac.embed(channel, message.title && message.title, message.description && message.description, null, true);
             console.log("message", message);
             let backupReactions = [`1️⃣`, `2️⃣`, `3️⃣`, `4️⃣`, `5️⃣`, `6️⃣`, `7️⃣`, `8️⃣`, `9️⃣`, `🔟`, `0️⃣`]
             let usedReaction = []
 
-            if (message.options) {
+            if (message.options && message.options.length !== 0) {
 
                 embed.addField("Click on a reaction to respond",
                         `${message.options.sort((a,b)=> a.order - b.order).sort((a,b)=> a.preferred_reaction ? 1 : 0).map(x=>  {
@@ -156,7 +181,7 @@ module.exports = {
             const user = message.author
 
             let payload = {
-                value: message.message,
+                value: message.content,
                 completed: true
             }
 
@@ -169,7 +194,7 @@ module.exports = {
             const user = _user
 
             let payload = {
-                value: message.message,
+                value: reaction.emoji.name,
                 completed: true
             }
 

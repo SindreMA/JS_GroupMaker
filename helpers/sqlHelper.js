@@ -149,13 +149,13 @@ module.exports = {
     getMessages(template_id) {
         return new Promise((resolve, reject) => {
             const query = `SELECT message, "order", template_id, title, id FROM public."Messages" where template_id = ${template_id};`
-            console.log("query", query);
+            //console.log("query", query);
             pool.query(query, (err,res) => {
                 if (!err && res && res.rowCount === 0) {
                     resolve([])
                 } else if (res && res.rows && res.rowCount !== 0) {
                     this.getOptions(res.rows.map(x=> x.id)).then(allOptions=> {
-                        console.log("messsage from sql", allOptions);
+                        //console.log("messsage from sql", allOptions);
                         const resultWithOptions = res.rows.map(x=> {return {...x, options: allOptions.filter(c=> c.message_id === x.id)}})
                         resolve(resultWithOptions)
                     }).catch(x=> {
@@ -170,7 +170,7 @@ module.exports = {
     getOptions(message_ids) {
         return new Promise((resolve, reject) => {
             const query = `SELECT message_id, option, preferred_reaction, "order", id FROM public."Options" where ${message_ids.map(x=> ` message_id = ${x}` ).join(' or ')}`;
-            console.log("options querry",query);
+            //console.log("options querry",query);
             pool.query(query, (err,res) => {
                 if (!err && res && res.rowCount === 0) {
                     resolve([])
