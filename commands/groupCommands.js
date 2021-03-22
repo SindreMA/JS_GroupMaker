@@ -36,7 +36,8 @@ var commands = [{
             logger.info(`Starting new group progress for user ${msg.author.tag}`)
             var embed = ac.embed(msg.channel, "Making group...", "", null, true);
             msg.channel.send(embed).then(message => {
-                groupHandler.CreateGroupItem(1, maxtanks, maxhealers, maxdamagers, description, map, msg)
+                //maxtanks, healer,dps, description, map, title
+                groupHandler.CreateGroupItem(1, args[0], args[1], args[2], args[3], args[4], msg, args[5])
             });
 
         }

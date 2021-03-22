@@ -144,8 +144,8 @@ module.exports = {
             })
         },
 
-        CreateGroupItem(template, maxtanks, maxhealers, maxdamagers, description, map, msg) {
-            sql.getOptions(1).then(maps => {
+        CreateGroupItem(template, maxtanks, maxhealers, maxdamagers, description, map, msg, title) {
+            sql.getOptions([1]).then(maps => {
                 var mapMatches = maps.filter(c => {
                     if (typeof map === 'number') {
                         return maps[map]
@@ -157,7 +157,7 @@ module.exports = {
                                 shortnName += word[0] //first letter in word
                             }
                         }
-                        if (shortnName === map.toLowerCase()) {
+                        if (shortnName.toLowerCase() === map.toLowerCase()) {
                             return true //If shortn match
                         } else if (map.toLowerCase() === c.option.toLowerCase()) {
                             return true //If full name match
@@ -168,6 +168,7 @@ module.exports = {
                 if (mapMatches.length !== 0) {
                     const selectedMap = mapMatches[0]
                     var GroupItem = {
+                        title,
                         description,
                         map: selectedMap,
                         admin: msg.author,
@@ -176,7 +177,7 @@ module.exports = {
                         maxdamagers,
 
                     }
-                    var embed = GenerateGroupEmbed(GroupItem)
+                    var embed = this.GenerateGroupEmbed(GroupItem)
 
                     msg.channel.send(embed).then(newMsg => {
                         sql.CreateGroupItem(template, description, mapMatches[0].order, msg.author.id, msg.channel.id, newMsg.id, maxtanks, maxhealers, maxdamagers)
@@ -187,23 +188,26 @@ module.exports = {
                     ac.embed(msg.channel, "Could not find map", null, null, false);
                 }
             }).catch(x => {
+                console.log(x);
+                logger.error(x)
                 ac.embed(msg.channel, "Something went wreong", null, null, false);
             })
         },
         GenerateGroupEmbed(GroupItem) {
+            console.log("test");
             var embed = ac.embed(null, GroupItem.title, GroupItem.description, null, true);
 
             const tanks = GroupItem.tanks && Array.isArray(GroupItem.tanks) ? GroupItem.tanks : []
             const healers = GroupItem.tanks && Array.isArray(GroupItem.tanks) ? GroupItem.tanks : []
             const damagers = GroupItem.tanks && Array.isArray(GroupItem.tanks) ? GroupItem.tanks : []
-            if (GroupItem.maxtanks !== 0) {
-                embed.addField(GroupItem.maxtanks > 1 ? 'Tanks' : 'Tank', tanks.join("\n"), true)
+            if (GroupItem.maxtanks !== '0') {
+                embed.addField(parseInt(GroupItem.maxtanks, 10) > 1 ? 'Tanks' : 'Tank', tanks.length === 0 ? 'None' : `${tanks.join("\n")}`, true)
             }
-            if (GroupItem.maxhealers !== 0) {
-                embed.addField(GroupItem.maxhealers > 1 ? 'Healers' : 'Healer', healers.join("\n"), true)
+            if (GroupItem.maxhealers !== '0') {
+                embed.addField(parseInt(GroupItem.maxhealers, 10) > 1 ? 'Healers' : 'Healer', healers.length === 0 ? 'None' : `${healers.join("\n")}`, true)
             }
-            if (GroupItem.maxtanks !== 0) {
-                embed.addField('DPS', damagers.join("\n"), true)
+            if (GroupItem.maxtanks !== '0') {
+                embed.addField('DPS', damagers.length === 0 ? 'None' : damagers.join("\n"), true)
             }
 
             embed.addField("Dungeon", GroupItem.map.option, true)
@@ -212,7 +216,7 @@ module.exports = {
 
             embed.setThumbnail(GroupItem.map.image)
             embed.setTimestamp(ac.getUnixTimestamp)
-            embed.setAuthor(GroupItem.admin.name)
+                //embed.setAuthor(GroupItem.admin.name)
 
             return embed
         },
