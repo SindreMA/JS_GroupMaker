@@ -147,63 +147,65 @@ module.exports = {
 
         CreateGroupItem(template, maxtanks, maxhealers, maxdamagers, description, map, msg) {
             sql.getOptions(1).then(maps => {
-                    var mapMatches = maps.filter(c => {
-                        if (typeof map === 'number') {
-                            return maps[map]
-                        } else if (typeof map === 'string') {
-                            var split = c.option.split(' ')
-                            var shortnName = ''
-                            for (const word of split) {
-                                if (word.toLowerCase() !== 'the') {
-                                    shortnName += word[0] //first letter in word
-                                }
-                            }
-                            if (shortnName === map.toLowerCase()) {
-                                return true //If shortn match
-                            } else if (map.toLowerCase() === c.option.toLowerCase()) {
-                                return true //If full name match
+                var mapMatches = maps.filter(c => {
+                    if (typeof map === 'number') {
+                        return maps[map]
+                    } else if (typeof map === 'string') {
+                        var split = c.option.split(' ')
+                        var shortnName = ''
+                        for (const word of split) {
+                            if (word.toLowerCase() !== 'the') {
+                                shortnName += word[0] //first letter in word
                             }
                         }
+                        if (shortnName === map.toLowerCase()) {
+                            return true //If shortn match
+                        } else if (map.toLowerCase() === c.option.toLowerCase()) {
+                            return true //If full name match
+                        }
+                    }
+                })
+
+                if (mapMatches.length !== 0) {
+                    const selectedMap = mapMatches[0]
+                    var GroupItem = {
+                        description,
+                        map: selectedMap,
+                        admin: msg.author,
+                        maxtanks,
+                        maxhealers,
+                        maxdamagers
+                    }
+                    var embed = GenerateGroupEmbed(GroupItem)
+
+                    msg.channel.send(embed).then(newMsg => {
+                        sql.CreateGroupItem(template, description, mapMatches[0].order, msg.author.id, msg.channel.id, newMsg.id, maxtanks, maxhealers, maxdamagers)
+
+
                     })
+                } else {
+                    ac.embed(msg.channel, "Could not find map", null, null, false);
+                }
+            }).catch(x => {
+                ac.embed(msg.channel, "Something went wreong", null, null, false);
+            })
+        },
+        GenerateGroupEmbed() {
 
-                    if (mapMatches.length !== 0) {
-                        const selectedMap = mapMatches[0]
-                        var GroupItem = {
-                            description,
-                            map: selectedMap,
-                            admin: msg.author,
-                            maxtanks,
-                            maxhealers,
-                            maxdamagers
-                        }
-                        var embed = GenerateGroupEmbed(GroupItem)
+            var embed = ac.embed(channel, message.title && message.title, message.description && message.description, null, true);
 
-                        msg.channel.send(embed).then(newMsg => {
-                            sql.CreateGroupItem(template, description, mapMatches[0].order, msg.author.id, msg.channel.id, newMsg.id, maxtanks, maxhealers, maxdamagers)
+        },
+        sendMessage(message, channel) {
+            console.log("message", message);
+            var embed = ac.embed(channel, message.title && message.title, message.description && message.description, null, true);
+            console.log("message", message);
+            let backupReactions = [`1️⃣`, `2️⃣`, `3️⃣`, `4️⃣`, `5️⃣`, `6️⃣`, `7️⃣`, `8️⃣`, `9️⃣`, `🔟`, `0️⃣`]
+            let usedReaction = []
 
+            if (message.options && message.options.length !== 0) {
 
-                        })
-                    } else {
-                        ac.embed(msg.channel, "Could not find map", null, null, false);
-                    }
-                }).catch(x => {
-                        ac.embed(msg.channel, "Something went wreong", null, null, false);
-                    }
-                },
-                GenerateGroupEmbed() {
-                    var embed = ac.embed(channel, message.title && message.title, message.description && message.description, null, true);
-                },
-                sendMessage(message, channel) {
-                    console.log("message", message);
-                    var embed = ac.embed(channel, message.title && message.title, message.description && message.description, null, true);
-                    console.log("message", message);
-                    let backupReactions = [`1️⃣`, `2️⃣`, `3️⃣`, `4️⃣`, `5️⃣`, `6️⃣`, `7️⃣`, `8️⃣`, `9️⃣`, `🔟`, `0️⃣`]
-                    let usedReaction = []
-
-                    if (message.options && message.options.length !== 0) {
-
-                        embed.addField("Click on a reaction to respond",
-                                `${message.options.sort((a,b)=> a.order - b.order).sort((a,b)=> a.preferred_reaction ? 1 : 0).map(x=>  {
+                embed.addField("Click on a reaction to respond",
+                        `${message.options.sort((a,b)=> a.order - b.order).sort((a,b)=> a.preferred_reaction ? 1 : 0).map(x=>  {
                 if (x.preferred_reaction) {
                     usedReaction.push(x.preferred_reaction)
                     return `${x.preferred_reaction} = ${x.option}`
