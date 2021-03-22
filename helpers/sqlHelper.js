@@ -207,6 +207,19 @@ module.exports = {
                 }
             })
         })   
+    },
+    CreateGroupItem(templateid, desscription, mapid, userId,channelId, messageId, maxTanks, maxHealers,maxDamagers) {
+        return new Promise((resolve, reject) => {
+            pool.query(`INSERT INTO public."Groups" (template, "timestamp", description, map, admin, channel, message, maxtanks, maxhealers, maxdamagers) VALUES (${templateid},${ac.getUnixTimestamp()},${desscription},${mapid},${userId},${channelId},${messageId},${maxTanks},${maxHealers},${maxDamagers});`, (err,res) => {
+                if (!err && res) {
+                    resolve()
+                } else if (err) {
+                    reject(err)
+                }
+            })
+        })   
+
+        
     }
 }
 
