@@ -169,7 +169,7 @@ module.exports = {
     },
     getOptions(message_ids) {
         return new Promise((resolve, reject) => {
-            const query = `SELECT message_id, option, preferred_reaction, "order", id FROM public."Options" where ${message_ids.map(x=> ` message_id = ${x}` ).join(' or ')}`;
+            const query = `SELECT message_id, option, preferred_reaction, "order", id, image FROM public."Options" where ${message_ids.map(x=> ` message_id = ${x}` ).join(' or ')}`;
             //console.log("options querry",query);
             pool.query(query, (err,res) => {
                 if (!err && res && res.rowCount === 0) {
