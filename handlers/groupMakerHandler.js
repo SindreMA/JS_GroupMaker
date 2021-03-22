@@ -5,7 +5,6 @@ const sql = require('../helpers/sqlHelper')
 const ac = require('../helpers/actions');
 const { DMChannel } = require("discord.js");
 
-
 module.exports = {
         createNewGroup(user, channel, messageTemplate = 1) {
             return new Promise((resolve, reject) => {
@@ -174,7 +173,8 @@ module.exports = {
                         admin: msg.author,
                         maxtanks,
                         maxhealers,
-                        maxdamagers
+                        maxdamagers,
+
                     }
                     var embed = GenerateGroupEmbed(GroupItem)
 
@@ -190,10 +190,31 @@ module.exports = {
                 ac.embed(msg.channel, "Something went wreong", null, null, false);
             })
         },
-        GenerateGroupEmbed() {
+        GenerateGroupEmbed(GroupItem) {
+            var embed = ac.embed(null, GroupItem.title, GroupItem.description, null, true);
 
-            var embed = ac.embed(channel, message.title && message.title, message.description && message.description, null, true);
+            const tanks = GroupItem.tanks && Array.isArray(GroupItem.tanks) ? GroupItem.tanks : []
+            const healers = GroupItem.tanks && Array.isArray(GroupItem.tanks) ? GroupItem.tanks : []
+            const damagers = GroupItem.tanks && Array.isArray(GroupItem.tanks) ? GroupItem.tanks : []
+            if (GroupItem.maxtanks !== 0) {
+                embed.addField(GroupItem.maxtanks > 1 ? 'Tanks' : 'Tank', tanks.join("\n"), true)
+            }
+            if (GroupItem.maxhealers !== 0) {
+                embed.addField(GroupItem.maxhealers > 1 ? 'Healers' : 'Healer', healers.join("\n"), true)
+            }
+            if (GroupItem.maxtanks !== 0) {
+                embed.addField('DPS', damagers.join("\n"), true)
+            }
 
+            embed.addField("Dungeon", GroupItem.map.option, true)
+                //embed.addField("Level", GroupItem.level)
+                //embed.addField("Armor type", GroupItem.level)
+
+            embed.setThumbnail(GroupItem.map.image)
+            embed.setTimestamp(ac.getUnixTimestamp)
+            embed.setAuthor(GroupItem.admin.name)
+
+            return embed
         },
         sendMessage(message, channel) {
             console.log("message", message);
