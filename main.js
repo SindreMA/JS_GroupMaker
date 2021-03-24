@@ -20,7 +20,7 @@ client.on('ready', () => {
 client.on('messageReactionAdd', (reaction, user) => {
     if (user.id !== client.user.id && !user.bot) {
         logger.info("Reaction added")
-        gh.handleAction("reaction", reaction, user)
+        gh.handleAction("reaction", reaction, user, client)
     }
 })
 

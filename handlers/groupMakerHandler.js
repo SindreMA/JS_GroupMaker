@@ -144,7 +144,7 @@ module.exports = {
             })
         },
 
-        CreateGroupItem(template, maxtanks, maxhealers, maxdamagers, description, map, msg, title) {
+        CreateGroupItem(template, maxtanks, maxhealers, maxdamagers, description, map, msg, title, level) {
             sql.getOptions([1]).then(maps => {
                 var mapMatches = maps.filter(c => {
                     if (typeof map === 'number') {
@@ -170,6 +170,7 @@ module.exports = {
                     var GroupItem = {
                         title,
                         description,
+                        level,
                         map: selectedMap,
                         admin: msg.author,
                         maxtanks,
@@ -180,7 +181,13 @@ module.exports = {
                     var embed = this.GenerateGroupEmbed(GroupItem)
 
                     msg.channel.send(embed).then(newMsg => {
-                        sql.CreateGroupItem(template, description, mapMatches[0].order, msg.author.id, msg.channel.id, newMsg.id, maxtanks, maxhealers, maxdamagers)
+                        sql.CreateGroupItem(template, title, description, level, mapMatches[0].order, msg.author.id, msg.channel.id, newMsg.id, maxtanks, maxhealers, maxdamagers)
+                        newMsg.react(`🛡️`) //tank
+                        newMsg.react(`❤️`) //hearth
+                        newMsg.react(`⚔️`) //dps
+
+
+
 
 
                     })
@@ -198,8 +205,8 @@ module.exports = {
             var embed = ac.embed(null, GroupItem.title, GroupItem.description, null, true);
 
             const tanks = GroupItem.tanks && Array.isArray(GroupItem.tanks) ? GroupItem.tanks : []
-            const healers = GroupItem.tanks && Array.isArray(GroupItem.tanks) ? GroupItem.tanks : []
-            const damagers = GroupItem.tanks && Array.isArray(GroupItem.tanks) ? GroupItem.tanks : []
+            const healers = GroupItem.healers && Array.isArray(GroupItem.healers) ? GroupItem.healers : []
+            const damagers = GroupItem.damagers && Array.isArray(GroupItem.damagers) ? GroupItem.damagers : []
             if (GroupItem.maxtanks !== '0') {
                 embed.addField(parseInt(GroupItem.maxtanks, 10) > 1 ? 'Tanks' : 'Tank', tanks.length === 0 ? 'None' : `${tanks.join("\n")}`, true)
             }
@@ -210,7 +217,8 @@ module.exports = {
                 embed.addField('DPS', damagers.length === 0 ? 'None' : damagers.join("\n"), true)
             }
 
-            embed.addField("Dungeon", GroupItem.map.option, true)
+            embed.addField("Dungeon", GroupItem.map ? GroupItem.map.option : 'Any', true)
+            embed.addField("Key level", GroupItem.level ? GroupItem.level : 'Any', true)
                 //embed.addField("Level", GroupItem.level)
                 //embed.addField("Armor type", GroupItem.level)
 
@@ -218,6 +226,7 @@ module.exports = {
             embed.setTimestamp(ac.getUnixTimestamp)
                 //embed.setAuthor(GroupItem.admin.name)
 
+            embed.addField("Info", "You can apply to this group by clicking the reactions under\n", false)
             return embed
         },
         sendMessage(message, channel) {
@@ -251,7 +260,8 @@ module.exports = {
             });
         })
     },
-    handleAction(type, action, _user) {
+
+    handleAction(type, action, _user, client) {
         if (type === 'message') {
             const message = action
             const channel = message.channel
@@ -274,9 +284,80 @@ module.exports = {
                 value: reaction.emoji.name,
                 completed: true
             }
+            if (channel.guild) { //Is GuildChannel
+                if (message.author.id === client.user.id) {
+                    sql.GetGroupItem(message.id).then(x=> {
+                        if (x && x.length !== 0) {
+                            const ev = x[0]
+                            let role = null
+                            if (payload.value === `🛡️`) {
+                                role = 'tank'
+                            } else if (payload.value === `❤️`) {
+                                role = 'healer'
+                            } else if (payload.value === `⚔️`) {
+                                role = 'damage'
+                            }
+                            
+                            var maxOfRole = ev[`max${role}s`]
+                            for (let i = 1; i < maxOfRole +1; i++) {
+                                const spotText = `${role}${i}`
+                                const spot = ev[spotText];
+                                if (!spot) {
 
-            this.sendSetupMessage(user, channel, payload)
+                                    var tanks = GetPlayers('tank', ev)
+                                    if (role === 'tank') tanks.push(user.id)
+
+                                    var healers = GetPlayers('healer', ev)
+                                    if (role === 'healer') healers.push(user.id)
+
+                                    var damagers = GetPlayers('damage', ev)
+                                    if (role === 'damage') damagers.push(user.id)
+
+                                  sql.TakeGroupItemSpot(ev.id, spotText, user.id).then(c=> {
+                                     sql.getOptions([1]).then(c=> {
+                                        var GroupItem = {
+                                            title: ev.title,
+                                            description: ev.description,
+                                            level: ev.level,
+                                            map: c.filter(v=> v.id == ev.map)[0],
+                                            admin: ev.admin,
+                                            maxtanks: ev.maxtanks,
+                                            maxhealers: ev.maxhealers,
+                                            maxdamagers: ev.maxdamagers,
+                                            tanks,
+                                            healers,
+                                            damagers
+                                        }
+                                          var embed = this.GenerateGroupEmbed(GroupItem)
+                                        message.edit(embed)
+                                        .then(msg => console.log(`Updated the content of a message`))
+                                        .catch(console.error);
+                                     })                                    
+                                  })
+                                  break;
+                                } 
+                            }
+                        }
+                    })    
+                }
+            } else { //Is DMChannel
+                this.sendSetupMessage(user, channel, payload)
+            }
         }
     }
+
+}
+
+function GetPlayers (role, ev) {
+    const keys = Object.keys(ev)
+    var players = []
+    for (const key of keys) {
+        if (key.toLowerCase().startsWith(role.toLowerCase())) {
+            if (ev[key]) {
+                players.push(ev[key])   
+            }
+        }
+    }
+    return players
 
 }

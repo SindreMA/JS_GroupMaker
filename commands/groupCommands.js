@@ -16,32 +16,50 @@ var errorEvent = (error, channel) => {
 }
 
 var commands = [{
-        command: 'new_group',
-        description: 'Create a new group item',
-        function: (args, msg, settings) => {
-            logger.info(`Starting new group progress for user ${msg.author.tag}`)
-            var embed = ac.embed(msg.channel, "Creating new group...", `Continue the setup in direct messages ${msg.author}!`, null, true);
-            msg.channel.send(embed).then(message => {
-                message.delete({ timeout: 5000 })
-                logger.debug(`Deleting group creation msg after 2 sec`)
-                groupHandler.createNewGroup(msg.author, msg.channel, 1)
-            });
+            command: 'new_group',
+            description: 'Create a new group item',
+            function: (args, msg, settings) => {
+                logger.info(`Starting new group progress for user ${msg.author.tag}`)
+                var embed = ac.embed(msg.channel, "Creating new group...", `Continue the setup in direct messages ${msg.author}!`, null, true);
+                msg.channel.send(embed).then(message => {
+                    message.delete({ timeout: 5000 })
+                    logger.debug(`Deleting group creation msg after 2 sec`)
+                    groupHandler.createNewGroup(msg.author, msg.channel, 1)
+                });
+
+            }
+        },
+        {
+            command: 'create_group',
+            description: 'dungeon(slug) "Title" "description" "level" "tanks(number)" healers(number) dps(number)',
+            function: (args, msg, settings) => {
+                logger.info(`Starting new group progress for user ${msg.author.tag}`)
+                const map = args[0]
+                const title = args[1]
+                const description = args[2]
+                const level = args[3]
+                const tanks = args[4]
+                const healers = args[5]
+                const dps = args[6]
+
+                groupHandler.CreateGroupItem(1, tanks, healers, dps, description, map, msg, title, level)
+            }
+        },
+        {
+            command: 'maps',
+            description: 'See what maps you can select',
+            function: (args, msg, settings) => {
+                    sql.getOptions([1]).then(x => {
+                                const sortedOptions = x.sort((a, b) => a.order - b.order)
+                                const mapsText = sortedOptions.map(c => `[${c.order}] ${c.option} (${c.option.split(" ").filter(v=> v.toLowerCase() !== "the").map(v=> v[0]).join('')})`)
+
+                                const mapString = `${"```"}${mapsText.join("\n")}${"```"}`
+                                ac.embed(msg.channel, "Maps:", `You can pass map by using the id, full name or the initials${mapString}`, null);
+
+            })
 
         }
     },
-    {
-        command: 'create_group',
-        description: 'dungeon(slug) "description" "tanks(number)" healers(number) dps(number)',
-        function: (args, msg, settings) => {
-            logger.info(`Starting new group progress for user ${msg.author.tag}`)
-            var embed = ac.embed(msg.channel, "Making group...", "", null, true);
-            msg.channel.send(embed).then(message => {
-                //maxtanks, healer,dps, description, map, title
-                groupHandler.CreateGroupItem(1, args[0], args[1], args[2], args[3], args[4], msg, args[5])
-            });
-
-        }
-    }
 ]
 
 module.exports = {
