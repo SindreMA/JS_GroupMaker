@@ -23,6 +23,12 @@ client.on('messageReactionAdd', (reaction, user) => {
         gh.handleAction("reaction", reaction, user, client)
     }
 })
+client.on('messageReactionRemove', (reaction, user) => {
+    if (user.id !== client.user.id && !user.bot) {
+        logger.info("Reaction added")
+        gh.handleRemoveAction("reaction", reaction, user, client)
+    }
+})
 
 client.on('message', msg => {
     try {

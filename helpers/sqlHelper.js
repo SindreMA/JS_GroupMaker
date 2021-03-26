@@ -243,6 +243,17 @@ module.exports = {
                 }
             })
         })
+    },
+    RemoveGroupItemSpot(id, spot) {
+        return new Promise((resolve, reject) => {
+            pool.query(`UPDATE public."Groups" SET ${spot}=NULL WHERE id = ${id};`, (err,res) => {
+                if (!err && res) {
+                    resolve()
+                } else if (err) {
+                    reject(err)
+                }
+            })
+        })
     }
 }
 
