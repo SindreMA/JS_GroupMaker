@@ -209,9 +209,9 @@ module.exports = {
             })
         })   
     },
-    CreateGroupItem(templateid, title,desscription,level, mapid, userId,channelId, messageId, maxTanks, maxHealers,maxDamagers) {
+    CreateGroupItem(templateid, title,desscription,level, mapid, userId,channelId, messageId, maxTanks, maxHealers,maxdamages) {
         return new Promise((resolve, reject) => {
-            pool.query(`INSERT INTO public."Groups" (template, "timestamp", title, description, level, map, admin, channel, message, maxtanks, maxhealers, maxdamages) VALUES (${templateid},${ac.getUnixTimestamp()},'${title}','${desscription}','${level}',${mapid},${userId},${channelId},${messageId},${maxTanks},${maxHealers},${maxDamagers});`, (err,res) => {
+            pool.query(`INSERT INTO public."Groups" (template, "timestamp", title, description, level, map, admin, channel, message, maxtanks, maxhealers, maxdamages) VALUES (${templateid},${ac.getUnixTimestamp()},'${title}','${desscription}','${level}',${mapid},${userId},${channelId},${messageId},${maxTanks},${maxHealers},${maxdamages});`, (err,res) => {
                 if (!err && res) {
                     resolve()
                 } else if (err) {
@@ -222,9 +222,30 @@ module.exports = {
 
         
     },
+    DeleteGroupItem(id) {
+        return new Promise((resolve, reject) => {
+            pool.query(`UPDATE public."Groups" SET disabled=true WHERE id=${id};`, (err,res) => {
+                if (!err && res) {
+                    resolve(res.rows)
+                } else if (err) {
+                    reject(err)
+                }
+            })
+        }) 
+    },
     GetGroupItem(messageId ) {
         return new Promise((resolve, reject) => {
-            pool.query(`SELECT id, template, tank1, tank2, tank3, tank4, healer1, healer2, healer3, healer4, healer5, healer6, healer7, healer8, damage1, damage2, damage3, damage4, damage5, damage6, damage7, damage8, damage9, damage10, damage11, damage12, damage13, damage14, damage15, damage16, damage17, damage18, damage19, damage20, damage21, damage22, damage23, damage24, damage25, damage26, damage27, damage28, damage29, damage30, damage31, damage32, damage33, damage34, damage35, damage36, damage37, damage38, damage39, damage40, "timestamp", description, map, admin, channel, message, maxtanks, maxhealers, maxdamages, title, level FROM public."Groups" where message = ${messageId};`, (err,res) => {
+            pool.query(`SELECT * FROM public."Groups" where message = ${messageId};`, (err,res) => {
+                if (!err && res) {
+                    resolve(res.rows)
+                } else if (err) {
+                    reject(err)
+                }
+            })
+        })   
+    },GetGroupItems(userId ) {
+        return new Promise((resolve, reject) => {
+            pool.query(`SELECT * FROM public."Groups" where admin = ${userId} order by timestamp desc;`, (err,res) => {
                 if (!err && res) {
                     resolve(res.rows)
                 } else if (err) {

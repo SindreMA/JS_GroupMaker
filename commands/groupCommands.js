@@ -31,18 +31,30 @@ var commands = [{
         },
         {
             command: 'create_group',
-            description: 'dungeon(slug) "Title" "description" "level" "tanks(number)" healers(number) dps(number)',
+            description: '"Title" "description" "level" [dungeon(slug) "tanks(number)" healers(number) dps(number)]',
+            requireArgs: [3, 4, 7],
             function: (args, msg, settings) => {
                 logger.info(`Starting new group progress for user ${msg.author.tag}`)
-                const map = args[0]
-                const title = args[1]
-                const description = args[2]
-                const level = args[3]
-                const tanks = args[4]
-                const healers = args[5]
-                const dps = args[6]
+                const title = args[0]
+                const description = args[1]
+                const level = args[2]
+
+                const map = !args[3] || args[3].toLowerCase() === 'any' ? undefined : args[3]
+                const tanks = args[4] ? args[4] : 1
+                const healers = args[5] ? args[5] : 1
+                const dps = args[6] ? args[6] : 3
 
                 groupHandler.CreateGroupItem(1, tanks, healers, dps, description, map, msg, title, level)
+            }
+        },
+        {
+            command: 'cancel',
+            description: 'Stop last event started by you, send with msg id to do spesific',
+            function: (args, msg, settings, client) => {
+                logger.info(`Canceling last event for ${msg.author.tag}`)
+                const msgId = args[0]
+
+                groupHandler.CancelGroupItem(msg, msgId, client)
             }
         },
         {

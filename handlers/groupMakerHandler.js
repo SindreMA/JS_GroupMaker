@@ -145,7 +145,7 @@ module.exports = {
             })
         },
 
-        CreateGroupItem(template, maxtanks, maxhealers, maxdamagers, description, map, msg, title, level) {
+        CreateGroupItem(template, maxtanks, maxhealers, maxdamages, description, map, msg, title, level) {
             sql.getOptions([1]).then(maps => {
                 var mapMatches = maps.filter(c => {
                     if (typeof map === 'number') {
@@ -166,7 +166,7 @@ module.exports = {
                     }
                 })
 
-                if (mapMatches.length !== 0) {
+                if (mapMatches.length !== 0 || !map || map.toLowerCase() === 'any') {
                     const selectedMap = mapMatches[0]
                     var GroupItem = {
                         title,
@@ -176,20 +176,16 @@ module.exports = {
                         admin: msg.author,
                         maxtanks,
                         maxhealers,
-                        maxdamagers,
+                        maxdamages,
 
                     }
                     var embed = this.GenerateGroupEmbed(GroupItem)
 
                     msg.channel.send(embed).then(newMsg => {
-                        sql.CreateGroupItem(template, title, description, level, mapMatches[0].order, msg.author.id, msg.channel.id, newMsg.id, maxtanks, maxhealers, maxdamagers)
+                        sql.CreateGroupItem(template, title, description, level, mapMatches[0].order, msg.author.id, msg.channel.id, newMsg.id, maxtanks, maxhealers, maxdamages)
                         newMsg.react(`🛡️`) //tank
                         newMsg.react(`❤️`) //hearth
                         newMsg.react(`⚔️`) //dps
-
-
-
-
 
                     })
                 } else {
@@ -208,38 +204,61 @@ module.exports = {
                 return 'Unknown'
             }
         },
+        CreateRoleField(list, max, client) {
+            var _max = typeof max === 'number' ? max : parseInt(max, 10)
+            var output = ""
+            var count = _max > 14 ? 14 : _max
+
+            for (let index = 0; index < count; index++) {
+                const el = list[index];
+                if (el) {
+                    output += `${this.GetName(el, client)}\n`
+                } else {
+                    output += `None\n`
+                }
+            }
+            return output
+        },
         GenerateGroupEmbed(GroupItem, client) {
             var embed = ac.embed(null, GroupItem.title, GroupItem.description, null, true);
 
             const tanks = GroupItem.tanks && Array.isArray(GroupItem.tanks) ? GroupItem.tanks : []
             const healers = GroupItem.healers && Array.isArray(GroupItem.healers) ? GroupItem.healers : []
             const damagers = GroupItem.damagers && Array.isArray(GroupItem.damagers) ? GroupItem.damagers : []
-            if (GroupItem.maxtanks !== '0') {
-                embed.addField(parseInt(GroupItem.maxtanks, 10) > 1 ? 'Tanks' : 'Tank', tanks.length === 0 ? 'None' : `${tanks.map(x=> this.GetName(x,client)).join("\n")}`, true)
-            }
-            if (GroupItem.maxhealers !== '0') {
-                embed.addField(parseInt(GroupItem.maxhealers, 10) > 1 ? 'Healers' : 'Healer', healers.length === 0 ? 'None' : `${healers.map(x=> this.GetName(x,client)).join("\n")}`, true)
-            }
-            if (GroupItem.maxdamages !== '0') {
-                const max = damagers.length === 0 ? parseInt(GroupItem.maxdamages) - 1 : 3 - damagers.length - 1
-                var emptyText = 'None'
-                for (let i = 0; i < max; i++) {
-                    emptyText = emptyText + '\n None'
+
+
+            if (!GroupItem.disabled) {
+                if (GroupItem.maxtanks !== '0') {
+                    const name = parseInt(GroupItem.maxtanks) > 1 ? 'Tanks' : 'Tank'
+
+                    embed.addField(name, this.CreateRoleField(tanks, GroupItem.maxtanks, client), true)
+                        //embed.addField(parseInt(GroupItem.maxtanks, 10) > 1 ? 'Tanks' : 'Tank', tanks.length === 0 ? 'None' : `${tanks.map(x=> this.GetName(x,client)).join("\n")}`, true)
                 }
-                if (damagers.length === parseInt(GroupItem.maxdamages)) emptyText = ''
-                embed.addField('DPS', damagers.length === 0 ? emptyText : damagers.map(x => this.GetName(x, client)).join("\n") + `\n` + emptyText, true)
+                if (GroupItem.maxhealers !== '0') {
+                    const name = parseInt(GroupItem.maxhealers) > 1 ? 'Healers' : 'Healer'
+                    embed.addField(name, this.CreateRoleField(healers, GroupItem.maxhealers, client), true)
+                        //embed.addField(parseInt(GroupItem.maxhealers, 10) > 1 ? 'Healers' : 'Healer', healers.length === 0 ? 'None' : `${healers.map(x=> this.GetName(x,client)).join("\n")}`, true)
+                }
+                if (GroupItem.maxdamages !== '0') {
+                    embed.addField('Dps', this.CreateRoleField(damagers, GroupItem.maxdamages, client), true)
+                        //embed.addField('DPS', damagers.length === 0 ? emptyText : damagers.map(x => this.GetName(x, client)).join("\n") + `\n` + emptyText, true)
+                }
+
+                embed.addField("Dungeon", GroupItem.map ? GroupItem.map.option : 'Any', true)
+                embed.addField("Key level", GroupItem.level ? GroupItem.level : 'Any', true)
+                    //embed.addField("Level", GroupItem.level)
+                    //embed.addField("Armor type", GroupItem.level)
+                embed.addField("Info", "You can apply to this group by clicking the reactions under\n", false)
+            } else {
+                embed.description = ""
+                embed.addField("Info", "This event have been canceled!", false)
             }
-
-            embed.addField("Dungeon", GroupItem.map ? GroupItem.map.option : 'Any', true)
-            embed.addField("Key level", GroupItem.level ? GroupItem.level : 'Any', true)
-                //embed.addField("Level", GroupItem.level)
-                //embed.addField("Armor type", GroupItem.level)
-
-            embed.setThumbnail(GroupItem.map.image)
+            if (GroupItem.map) {
+                embed.setThumbnail(GroupItem.map.image)
+            }
             embed.setTimestamp(ac.getUnixTimestamp)
                 //embed.setAuthor(GroupItem.admin.name)
 
-            embed.addField("Info", "You can apply to this group by clicking the reactions under\n", false)
             return embed
         },
         sendMessage(message, channel) {
@@ -427,6 +446,57 @@ module.exports = {
                 this.sendSetupMessage(user, channel, payload)
             }
         }
+    },
+
+    CancelGroupItem (msg, msgId,client)  {
+        const successDeletion = (ev) => {
+            client.channels.fetch(ev.channel).then(channel => {
+                if (channel.isText()) {
+                    channel.messages.fetch(ev.message).then(message => {
+                        var tanks = GetPlayers('tank', ev)
+                        var healers = GetPlayers('healer', ev)
+                        var damagers = GetPlayers('damage', ev)
+                        
+                        sql.getOptions([1]).then(c=> {
+                               var GroupItem = {
+                                   title: ev.title,
+                                   description: ev.description,
+                                   level: ev.level,
+                                   map: c.filter(v=> v.id == ev.map)[0],
+                                   admin: ev.admin,
+                                   maxtanks: ev.maxtanks,
+                                   maxhealers: ev.maxhealers,
+                                   maxdamages: ev.maxdamages,
+                                   tanks: tanks.filter(v=> v != user.id),
+                                   healers: healers.filter(v=> v != user.id),
+                                   damagers: damagers.filter(v=> v != user.id),
+                                   disabled: true
+                               }
+                               message.edit(this.GenerateGroupEmbed(GroupItem,client)).then((newmsg) => {
+                                newmsg.reactions.removeAll()
+                               })
+                        })
+                    })                    
+                }
+            })
+        }
+        sql.GetGroupItems(msg.author.id).then(x=> {
+            if (x && x.length !== 0) {
+                if (!msgId) {
+                    sql.DeleteGroupItem(x[0].id).then(() => successDeletion(x[0]))
+                    return null;
+                } else {
+                    for (const ev of x) {
+                        if (ev.message === msgId) {
+                            sql.DeleteGroupItem(ev.id).then(()=> successDeletion(ev))
+                            return null;
+                        }
+                    }
+                }
+            } else {
+                throw exception("No event for current user")
+            }
+        }).catch(x=> logger.error(x))
     }
 
 }
