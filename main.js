@@ -14,7 +14,8 @@ client.on('ready', () => {
     client.guilds.cache.map(x => {
         logger.info(`Connected to server ${x.name}!`);
     })
-    client.user.setActivity("currently under development")
+    gh.fetchOldMessage(client)
+    //client.user.setActivity("currently under development")
 });
 
 client.on('messageReactionAdd', (reaction, user) => {

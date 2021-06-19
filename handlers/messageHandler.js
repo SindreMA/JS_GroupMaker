@@ -48,7 +48,7 @@ module.exports = {
 
 
 UserMessageHandler = (msg) => {
-    if (!msg.author.bot && msg.author.id !== client.user.id) {
+    if (!msg.author?.bot && msg.author.id !== client?.user?.id) {
         gh.handleAction("message", msg)
     }
 }

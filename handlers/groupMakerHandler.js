@@ -128,7 +128,7 @@ module.exports = {
                                             })
 
                                         }
-                                    }).catch(X => logger.error(x))
+                                    }).catch(X => logger.error(X))
 
                                 }).catch(x => {
                                     reject(x)
@@ -145,8 +145,8 @@ module.exports = {
             })
         },
 
-        CreateGroupItem(template, maxtanks, maxhealers, maxdamages, description, map, msg, title, level) {
-            sql.getOptions([1]).then(maps => {
+        async CreateGroupItem(template, maxtanks, maxhealers, maxdamages, description, map, msg, title, level) {
+            sql.getOptions([1]).then( async(maps) => {
                 var mapMatches = maps.filter(c => {
                     if (typeof map === 'number') {
                         return maps[map]
@@ -179,7 +179,7 @@ module.exports = {
                         maxdamages,
 
                     }
-                    var embed = this.GenerateGroupEmbed(GroupItem)
+                    var embed = await this.GenerateGroupEmbed(GroupItem)
 
                     msg.channel.send(embed).then(newMsg => {
                         sql.CreateGroupItem(template, title, description, level, mapMatches[0].order, msg.author.id, msg.channel.id, newMsg.id, maxtanks, maxhealers, maxdamages)
@@ -197,14 +197,15 @@ module.exports = {
                 ac.embed(msg.channel, "Something went wreong", null, null, false);
             })
         },
-        GetName(userId, client) {
+        async GetName(userId, client) {
             try {
-                return client.users.resolve(userId).username
+                var user = await client.users.fetch(userId)
+                return user.username
             } catch (error) {
                 return 'Unknown'
             }
         },
-        CreateRoleField(list, max, client) {
+        async CreateRoleField(list, max, client) {
             var _max = typeof max === 'number' ? max : parseInt(max, 10)
             var output = ""
             var count = _max > 14 ? 14 : _max
@@ -212,14 +213,14 @@ module.exports = {
             for (let index = 0; index < count; index++) {
                 const el = list[index];
                 if (el) {
-                    output += `${this.GetName(el, client)}\n`
+                    output += `${await this.GetName(el, client)}\n`
                 } else {
                     output += `None\n`
                 }
             }
             return output
         },
-        GenerateGroupEmbed(GroupItem, client) {
+        async GenerateGroupEmbed(GroupItem, client) {
             var embed = ac.embed(null, GroupItem.title, GroupItem.description, null, true);
 
             const tanks = GroupItem.tanks && Array.isArray(GroupItem.tanks) ? GroupItem.tanks : []
@@ -231,16 +232,16 @@ module.exports = {
                 if (GroupItem.maxtanks !== '0') {
                     const name = parseInt(GroupItem.maxtanks) > 1 ? 'Tanks' : 'Tank'
 
-                    embed.addField(name, this.CreateRoleField(tanks, GroupItem.maxtanks, client), true)
+                    embed.addField(name, await this.CreateRoleField(tanks, GroupItem.maxtanks, client), true)
                         //embed.addField(parseInt(GroupItem.maxtanks, 10) > 1 ? 'Tanks' : 'Tank', tanks.length === 0 ? 'None' : `${tanks.map(x=> this.GetName(x,client)).join("\n")}`, true)
                 }
                 if (GroupItem.maxhealers !== '0') {
                     const name = parseInt(GroupItem.maxhealers) > 1 ? 'Healers' : 'Healer'
-                    embed.addField(name, this.CreateRoleField(healers, GroupItem.maxhealers, client), true)
+                    embed.addField(name, await this.CreateRoleField(healers, GroupItem.maxhealers, client), true)
                         //embed.addField(parseInt(GroupItem.maxhealers, 10) > 1 ? 'Healers' : 'Healer', healers.length === 0 ? 'None' : `${healers.map(x=> this.GetName(x,client)).join("\n")}`, true)
                 }
                 if (GroupItem.maxdamages !== '0') {
-                    embed.addField('Dps', this.CreateRoleField(damagers, GroupItem.maxdamages, client), true)
+                    embed.addField('Dps', await this.CreateRoleField(damagers, GroupItem.maxdamages, client), true)
                         //embed.addField('DPS', damagers.length === 0 ? emptyText : damagers.map(x => this.GetName(x, client)).join("\n") + `\n` + emptyText, true)
                 }
 
@@ -292,7 +293,7 @@ module.exports = {
             });
         })
     },
-    handleRemoveAction(type, action, _user, client) {
+    async handleRemoveAction(type, action, _user, client) {
         if (type === 'reaction') {
             const reaction = action
             const message = reaction.message
@@ -329,7 +330,7 @@ module.exports = {
 
                                 if (spot == user.id) {
                                     sql.getOptions([1]).then(c=> {
-                                            sql.RemoveGroupItemSpot(ev.id, spotText).then(()=> {
+                                            sql.RemoveGroupItemSpot(ev.id, spotText).then(async ()=> {
                                            var GroupItem = {
                                                title: ev.title,
                                                description: ev.description,
@@ -343,7 +344,7 @@ module.exports = {
                                                healers: healers.filter(v=> v != user.id),
                                                damagers: damagers.filter(v=> v != user.id)
                                            }
-                                             var embed = this.GenerateGroupEmbed(GroupItem, client)
+                                             var embed = await this.GenerateGroupEmbed(GroupItem, client)
                                            message.edit(embed)
                                            .then(msg => console.log(`Updated the content of a message`))
                                            .catch(console.error);
@@ -358,7 +359,20 @@ module.exports = {
             }
         }
     },
-    handleAction(type, action, _user, client) {
+    fetchOldMessage(client) {
+        sql.getGroups().then(rows=> {
+            for (const row of rows) {
+                try {
+                    client.channels.fetch(row.channel,true,true).then(x=> {
+                        x.messages.fetch(row.message,true,true)
+                    })
+                } catch (error) {
+                    
+                }
+            }
+        })
+    },
+    async handleAction(type, action, _user, client) {
         if (type === 'message') {
             const message = action
             const channel = message.channel
@@ -415,8 +429,8 @@ module.exports = {
                                     else if (role === 'healer') healers.push(user.id)
                                     else if (role === 'tank') tanks.push(user.id)
 
-                                  sql.TakeGroupItemSpot(ev.id, spotText, user.id).then(()=> {
-                                     sql.getOptions([1]).then(c=> {
+                                  sql.TakeGroupItemSpot(ev.id, spotText, user.id).then(async()=> {
+                                     sql.getOptions([1]).then(async (c)=> {
                                         var GroupItem = {
                                             title: ev.title,
                                             description: ev.description,
@@ -430,7 +444,7 @@ module.exports = {
                                             healers,
                                             damagers
                                         }
-                                          var embed = this.GenerateGroupEmbed(GroupItem, client)
+                                          var embed = await this.GenerateGroupEmbed(GroupItem, client)
                                         message.edit(embed)
                                         .then(msg => console.log(`Updated the content of a message`))
                                         .catch(console.error);
@@ -448,7 +462,7 @@ module.exports = {
         }
     },
 
-    CancelGroupItem (msg, msgId,client)  {
+    async CancelGroupItem (msg, msgId,client)  {
         const successDeletion = (ev) => {
             client.channels.fetch(ev.channel).then(channel => {
                 if (channel.isText()) {
@@ -457,7 +471,7 @@ module.exports = {
                         var healers = GetPlayers('healer', ev)
                         var damagers = GetPlayers('damage', ev)
                         
-                        sql.getOptions([1]).then(c=> {
+                        sql.getOptions([1]).then(async (c)=> {
                                var GroupItem = {
                                    title: ev.title,
                                    description: ev.description,
@@ -467,12 +481,13 @@ module.exports = {
                                    maxtanks: ev.maxtanks,
                                    maxhealers: ev.maxhealers,
                                    maxdamages: ev.maxdamages,
-                                   tanks: tanks.filter(v=> v != user.id),
-                                   healers: healers.filter(v=> v != user.id),
-                                   damagers: damagers.filter(v=> v != user.id),
+                                   tanks: [],
+                                   healers: [],
+                                   damagers: [],
                                    disabled: true
                                }
-                               message.edit(this.GenerateGroupEmbed(GroupItem,client)).then((newmsg) => {
+                               var embed = await this.GenerateGroupEmbed(GroupItem,client)
+                               message.edit(embed).then((newmsg) => {
                                 newmsg.reactions.removeAll()
                                })
                         })

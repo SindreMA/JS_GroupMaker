@@ -87,6 +87,21 @@ module.exports = {
             })
         })        
     },
+    getGroups() {
+        return new Promise((resolve, reject) => {
+            const oneMonthAgo = ac.getUnixTimestamp() - 2592000000
+            const query = `SELECT * FROM public."Groups" where timestamp > ${oneMonthAgo} order by timestamp desc`;
+            pool.query(query, (err,res) => {
+                if (!err && res && res.rowCount === 0) {
+                    resolve([])
+                } else if (res && res.rows && res.rowCount !== 0) {
+                    resolve(res.rows)
+                } else if (err) {
+                    reject(err)
+                }
+            })
+        })        
+    },
     deleteMessageSetup(ids) {
         return new Promise((resolve, reject) => {
             if (ids && ids.length !== 0) {
@@ -243,7 +258,8 @@ module.exports = {
                 }
             })
         })   
-    },GetGroupItems(userId ) {
+    },
+    GetGroupItems(userId ) {
         return new Promise((resolve, reject) => {
             pool.query(`SELECT * FROM public."Groups" where admin = ${userId} order by timestamp desc;`, (err,res) => {
                 if (!err && res) {
